@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Riot Cookie Company — Gluten-Free Vegan Chocolate Chip Cookies</title>
+  <meta name="description" content="Gluten-free, vegan chocolate chip cookies, freshly baked or as frozen dough. Boxes of 12 or 24." />
+  <meta name="theme-color" content="#0E0E0E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0E0E0E',      // black ground
+            coal: '#1E1D1B',     // dark grey surface
+            ash: '#3A3834',      // hairlines
+            smoke: '#ABA393',    // muted cream (7:1 on black)
+            bone: '#F4ECDD',     // cream: primary text, FAQ band
+            gold: '#CDA85E',      // gold: buttons, badges (black text on top)
+            rose: '#D8B56E',     // gold for text on black
+            sun: '#EBD39C',
+          },
+          fontFamily: {
+            display: ['Archivo', 'system-ui', 'sans-serif'],
+            body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+          },
+          keyframes: {
+            bump: { '0%,100%': { opacity: 1 }, '40%': { opacity: 0.55 } },
+            floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+            spin_slow: { to: { transform: 'rotate(360deg)' } },
+            pop_in: { '0%': { opacity: 0, transform: 'translateY(3px)' }, '100%': { opacity: 1, transform: 'none' } },
+            toast: { '0%': { transform: 'translate(-50%, 12px)', opacity: 0 }, '12%,85%': { transform: 'translate(-50%, 0)', opacity: 1 }, '100%': { transform: 'translate(-50%, 6px)', opacity: 0 } },
+          },
+          animation: {
+            bump: 'bump 0.6s ease-out',
+            floaty: 'floaty 9s ease-in-out infinite',
+            'spin-slow': 'spin_slow 120s linear infinite',
+            'pop-in': 'pop_in 0.4s ease-out both',
+            toast: 'toast 2.2s ease-out forwards',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: #0E0E0E; color: #F4ECDD; }
+    /* Wide, heavy display face; small caps labels share it */
+    .font-display { font-family: 'Archivo', system-ui, sans-serif; font-stretch: 125%; font-weight: 800 !important; letter-spacing: -0.01em; }
+    .uppercase { font-family: 'Archivo', system-ui, sans-serif; font-stretch: 125%; font-weight: 600; }
+    /* Film grain over everything */
+    body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 70; opacity: .09; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    .glow { background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(205,168,94,.16), transparent 70%); }
+    .sunset { background: linear-gradient(135deg, #F0D9A2 0%, #CDA85E 55%, #A9843C 100%); }
+    .btn-press { border-radius: 16px; transition: transform .15s ease, background-color .2s ease, filter .2s ease; }
+    .btn-press:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-press:active:not(:disabled) { transform: translateY(1px); }
+    input, textarea { color: #F4ECDD; }
+    input:focus, textarea:focus, select:focus, button:focus-visible, a:focus-visible { outline: 2px solid #CDA85E; outline-offset: 3px; }
+    ::selection { background: #CDA85E; color: #0E0E0E; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+</head>
+<body class="antialiased">
+  <div id="root">
+    <noscript>Please enable JavaScript to shop Riot Cookie Company.</noscript>
+  </div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    /* ------------------------------------------------------------------ */
+    /* Data                                                                */
+    /* ------------------------------------------------------------------ */
+    const FREE_SHIP_THRESHOLD = 75;
+    const SHIPPING_FEE = 9.95;
+    
+    // Display prices only. The real prices are set on the server in netlify/functions/create-checkout.mjs
+    const PRICES = {
+      baked: { 12: 42, 24: 76 },
+      dough: { 12: 38, 24: 68 },
+    };
+
+    const FORMS = {
+      baked: { id: 'baked', label: 'Fresh Baked', short: 'Baked', blurb: 'Ready to eat, heat-sealed fresh' },
+      dough: { id: 'dough', label: 'Dough to Bake', short: 'Dough', blurb: 'Frozen dough balls, bake anytime' },
+    };
+
+    // The one cookie we make
+    // Placeholder product photography (free Unsplash licence). Swap for your own shots.
+    const u = (id, w) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;
+    const PHOTOS = {
+      hero: u('1782227158007-2064c6defcbb', 1600),   // stack of chocolate chip cookies on black
+      baked: u('1558961363-fa8fdf82db35', 1000),     // bowl of baked chocolate chip cookies
+      dough: u('1506184341422-6cc152ae474b', 1000),  // scooped dough balls on parchment
+    };
+    const thumb = form => form === 'dough' ? u('1506184341422-6cc152ae474b', 160) : u('1558961363-fa8fdf82db35', 160);
+
+
+    // The four offerings
+    const PRODUCTS = [
+      { id: 'baked-12', form: 'baked', size: 12, name: '12-Piece Chocolate Chip Cookies' },
+      { id: 'baked-24', form: 'baked', size: 24, name: '24-Piece Chocolate Chip Cookies' },
+      { id: 'dough-12', form: 'dough', size: 12, name: '12-Piece Chocolate Chip Cookie Dough' },
+      { id: 'dough-24', form: 'dough', size: 24, name: '24-Piece Chocolate Chip Cookie Dough' },
+    ].map(p => ({ ...p, price: PRICES[p.form][p.size] }));
+
+    const money = n => `$${n.toFixed(2)}`;
+
+    /* ------------------------------------------------------------------ */
+    /* Icons (inline Lucide-style SVG)                                     */
+    /* ------------------------------------------------------------------ */
+    const Icon = ({ children, size = 20, className = '', strokeWidth = 1.5 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth}
+        strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">{children}</svg>
+    );
+    const IconCart = p => <Icon {...p}><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></Icon>;
+    const IconPlus = p => <Icon {...p}><path d="M5 12h14" /><path d="M12 5v14" /></Icon>;
+    const IconMinus = p => <Icon {...p}><path d="M5 12h14" /></Icon>;
+    const IconX = p => <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>;
+    const IconCheck = p => <Icon {...p}><path d="M20 6 9 17l-5-5" /></Icon>;
+    const IconChevron = p => <Icon {...p}><path d="m6 9 6 6 6-6" /></Icon>;
+    const IconTrash = p => <Icon {...p}><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></Icon>;
+    const IconTruck = p => <Icon {...p}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></Icon>;
+    const IconFlame = p => <Icon {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></Icon>;
+    const IconSnow = p => <Icon {...p}><path d="M2 12h20" /><path d="M12 2v20" /><path d="m20 16-4-4 4-4" /><path d="m4 8 4 4-4 4" /><path d="m16 4-4 4-4-4" /><path d="m8 20 4-4 4 4" /></Icon>;
+    const IconShield = p => <Icon {...p}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></Icon>;
+    const IconSparkle = p => <Icon {...p}><path d="M9.94 14.06 2 22" /><path d="m12 2 1.9 5.8a2 2 0 0 0 1.3 1.3L21 11l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 20l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 11l5.8-1.9a2 2 0 0 0 1.3-1.3z" /></Icon>;
+    const IconShuffle = p => <Icon {...p}><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" /><path d="m18 2 4 4-4 4" /><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" /><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" /><path d="m18 14 4 4-4 4" /></Icon>;
+    const IconLock = p => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></Icon>;
+    const IconArrow = p => <Icon {...p}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></Icon>;
+    const IconBack = p => <Icon {...p}><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></Icon>;
+    const IconMenu = p => <Icon {...p}><path d="M4 12h16" /><path d="M4 6h16" /><path d="M4 18h16" /></Icon>;
+
+    /* ------------------------------------------------------------------ */
+    /* Small UI primitives                                                 */
+    /* ------------------------------------------------------------------ */
+    function Badge({ children, className = '' }) {
+      return (
+        <span className={`inline-flex items-center gap-1 rounded-full border border-ash px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-smoke ${className}`}>
+          {children}
+        </span>
+      );
+    }
+
+    function Segmented({ options, value, onChange, label, size = 'md' }) {
+      return (
+        <div role="radiogroup" aria-label={label} className="inline-flex rounded-2xl border border-ash bg-coal p-1">
+          {options.map(opt => {
+            const active = opt.value === value;
+            return (
+              <button key={opt.value} type="button" role="radio" aria-checked={active} onClick={() => onChange(opt.value)}
+                className={`flex items-center gap-2 rounded-xl text-xs font-medium uppercase tracking-[0.18em] transition-colors duration-300 ${size === 'lg' ? 'px-4 py-3 sm:px-5' : 'px-3.5 py-2.5 sm:px-4'} ${active ? 'bg-gold text-ink' : 'text-smoke hover:text-bone'}`}>
+                {opt.icon}{opt.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function QtyStepper({ value, onDec, onInc, decDisabled, incDisabled, label, compact }) {
+      const s = compact ? 'h-8 w-8' : 'h-11 w-11';
+      return (
+        <div className="inline-flex items-center rounded-2xl border border-ash bg-coal">
+          <button type="button" onClick={onDec} disabled={decDisabled} aria-label={`Decrease ${label}`}
+            className={`${s} grid place-items-center rounded-2xl transition hover:bg-ink disabled:opacity-30 disabled:cursor-not-allowed`}>
+            <IconMinus size={compact ? 14 : 18} />
+          </button>
+          <span className={`${compact ? 'w-6 text-sm' : 'w-8 text-lg'} text-center font-display font-medium tabular-nums`} aria-live="polite">{value}</span>
+          <button type="button" onClick={onInc} disabled={incDisabled} aria-label={`Increase ${label}`}
+            className={`${s} grid place-items-center rounded-2xl transition hover:bg-ink disabled:opacity-30 disabled:cursor-not-allowed`}>
+            <IconPlus size={compact ? 14 : 18} />
+          </button>
+        </div>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Announcement bar + Nav                                              */
+    /* ------------------------------------------------------------------ */
+    function Logo() {
+      return (
+        <a href="#top" className="text-center leading-none text-bone" aria-label="Riot Cookie Company home"><span className="block font-display text-2xl sm:text-3xl">RIOT</span><span className="mt-1 block text-[9px] uppercase tracking-[0.2em] text-rose sm:text-[10px]">Cookie Company</span></a>
+      );
+    }
+
+    function Nav({ cartCount, onCart }) {
+      const [bump, setBump] = useState(false);
+      const prev = useRef(cartCount);
+      useEffect(() => {
+        if (cartCount > prev.current) {
+          setBump(true);
+          const t = setTimeout(() => setBump(false), 600);
+          prev.current = cartCount;
+          return () => clearTimeout(t);
+        }
+        prev.current = cartCount;
+      }, [cartCount]);
+      return (
+        <header className="sticky top-0 z-30 bg-ink/85 backdrop-blur">
+          <nav className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 sm:px-6">
+            <ul className="flex items-center gap-1 text-xs uppercase">
+              <li><a href="#shop" className="rounded-xl px-2 py-2 text-bone transition hover:text-rose sm:px-3">Shop</a></li>
+              <li className="hidden sm:block"><a href="#faq" className="rounded-xl px-3 py-2 text-bone transition hover:text-rose">Baking Guide</a></li>
+            </ul>
+            <Logo />
+            <div className="flex justify-end">
+              <button type="button" onClick={onCart} aria-label={`Open cart, ${cartCount} items`}
+                className={`btn-press flex items-center gap-2 bg-gold px-3 py-2.5 text-xs uppercase text-ink sm:px-4 ${bump ? 'animate-bump' : ''}`}>
+                <IconCart size={18} />
+                <span className="hidden sm:inline">Cart</span>
+                <span key={cartCount} className="grid h-6 min-w-[24px] animate-pop-in place-items-center rounded-full bg-ink px-1 text-[11px] text-bone">{cartCount}</span>
+              </button>
+            </div>
+          </nav>
+        </header>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Hero                                                                */
+    /* ------------------------------------------------------------------ */
+    function StatCircle({ big, small, className = '' }) {
+      return (
+        <div className={`grid shrink-0 place-items-center rounded-full text-center text-ink ${className}`}>
+          <div>
+            <div className="font-display text-2xl leading-none sm:text-3xl">{big}</div>
+            <div className="mt-1 text-xs sm:text-sm">{small}</div>
+          </div>
+        </div>
+      );
+    }
+
+    function Hero() {
+      return (
+        <section id="top" className="relative overflow-hidden">
+          <div className="glow pointer-events-none absolute inset-0" />
+          <div className="relative mx-auto max-w-5xl px-4 pt-14 text-center sm:px-6 md:pt-20">
+            <h1 className="font-display text-4xl leading-[1.05] sm:text-6xl lg:text-7xl">
+              The chocolate chip cookie, made for everyone
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-smoke">
+              Gluten-free and vegan, from a dedicated gluten-free kitchen. Freshly baked or as frozen dough, in boxes of 12 or 24.
+            </p>
+            <a href="#shop" className="btn-press mt-9 inline-flex items-center gap-2 bg-gold px-8 py-4 text-sm uppercase text-ink">
+              Shop Cookies <IconArrow size={16} strokeWidth={2.5} />
+            </a>
+          </div>
+          <div className="relative mx-auto mt-12 max-w-5xl px-4 sm:px-6">
+            <img src={PHOTOS.hero} alt="A tall stack of chocolate chip cookies" className="h-[320px] w-full rounded-[32px] object-cover sm:h-[460px]" />
+            <StatCircle big="GF" small="certified" className="absolute -top-8 left-8 h-24 w-24 bg-gold shadow-xl sm:left-14 sm:h-32 sm:w-32" />
+            <StatCircle big="VG" small="plant-based" className="sunset absolute -bottom-8 right-8 h-24 w-24 shadow-xl sm:right-14 sm:h-32 sm:w-32" />
+          </div>
+        </section>
+      );
+    }
+
+    function ProductPanel({ form, onAdd }) {
+      const [size, setSize] = useState(12);
+      const [qty, setQty] = useState(1);
+      const [added, setAdded] = useState(false);
+      const product = PRODUCTS.find(p => p.form === form && p.size === size);
+      const dough = form === 'dough';
+      const add = () => {
+        onAdd(product, qty);
+        setQty(1);
+        setAdded(true);
+        setTimeout(() => setAdded(false), 1400);
+      };
+      return (
+        <article id={`shop-${form}`} className="flex scroll-mt-24 flex-col rounded-[32px] bg-coal p-5 sm:p-8">
+          <div className="relative h-64 overflow-hidden rounded-3xl bg-ink sm:h-80">
+            <img src={dough ? PHOTOS.dough : PHOTOS.baked} alt={dough ? 'Scoops of chocolate chip cookie dough on parchment' : 'A bowl of baked chocolate chip cookies'} loading="lazy" className="h-full w-full object-cover" />
+            <StatCircle big={size} small={dough ? 'dough balls' : 'cookies'} className={`absolute left-4 top-4 h-24 w-24 shadow-xl ${dough ? 'sunset' : 'bg-gold'}`} />
+          </div>
+          <h3 className="mt-8 font-display text-2xl uppercase sm:text-3xl">{dough ? 'Cookie Dough' : 'Fresh Baked'}</h3>
+          <p className="mt-2 text-xs uppercase tracking-[0.12em] text-rose">Chocolate chip · Gluten-free · Vegan</p>
+          <p className="mt-4 text-smoke">
+            {dough
+              ? 'Frozen, pre-portioned dough balls. Ships with cold packs. Bake from frozen at 350°F for 13–15 minutes.'
+              : 'Baked the morning they ship and heat-sealed for freshness. Ready to eat.'}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <Segmented label={`${dough ? 'Dough' : 'Baked'} box size`} value={size} onChange={setSize} options={[
+              { value: 12, label: '12 Piece' },
+              { value: 24, label: '24 Piece' },
+            ]} />
+            <div className="text-right">
+              <div className="font-display text-3xl">{money(product.price)}</div>
+              <div className="text-xs text-smoke">{money(product.price / size)} each</div>
+            </div>
+          </div>
+          <div className="mt-auto flex items-center gap-3 pt-6">
+            <QtyStepper value={qty} label={product.name} onDec={() => setQty(q => Math.max(1, q - 1))} onInc={() => setQty(q => Math.min(20, q + 1))} decDisabled={qty <= 1} incDisabled={qty >= 20} />
+            <button type="button" onClick={add} aria-label={`Add ${product.name} to cart`}
+              className={`btn-press flex flex-1 items-center justify-center gap-2 py-4 text-sm uppercase text-ink ${added ? 'sunset' : 'bg-gold'}`}>
+              {added ? <><IconCheck size={16} strokeWidth={2.5} /> Added</> : 'Add to Cart'}
+            </button>
+          </div>
+        </article>
+      );
+    }
+
+    function Shop({ onAdd }) {
+      return (
+        <section id="shop" className="scroll-mt-20">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+            <div className="mb-10 text-center">
+              <p className="text-xs uppercase tracking-[0.15em] text-rose">Two ways to enjoy</p>
+              <h2 className="mt-3 font-display text-3xl sm:text-5xl">Pick your cookie</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <ProductPanel form="baked" onAdd={onAdd} />
+              <ProductPanel form="dough" onAdd={onAdd} />
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    const IconLeaf = p => <Icon {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></Icon>;
+
+    function Benefits() {
+      const items = [
+        { icon: <IconShield size={28} strokeWidth={2} />, t: 'Certified gluten-free', d: 'Made in a dedicated gluten-free kitchen. Safe for celiacs.' },
+        { icon: <IconLeaf size={28} strokeWidth={2} />, t: '100% plant-based', d: 'No dairy, no eggs. Just a really good chocolate chip cookie.' },
+        { icon: <IconFlame size={28} strokeWidth={2} />, t: 'Baked or ready-to-bake', d: 'Ready to eat today, or frozen dough for whenever the craving hits.' },
+      ];
+      return (
+        <section className="border-y border-ash">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 text-center sm:px-6 md:grid-cols-3 md:py-20">
+            {items.map(i => (
+              <div key={i.t} className="flex flex-col items-center">
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-gold text-ink">{i.icon}</span>
+                <h3 className="mt-5 text-base uppercase">{i.t}</h3>
+                <p className="mt-2 max-w-xs text-smoke">{i.d}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Cart drawer                                                         */
+    /* ------------------------------------------------------------------ */
+    function FreeShipBar({ subtotal }) {
+      const left = Math.max(0, FREE_SHIP_THRESHOLD - subtotal);
+      const pct = Math.min(100, (subtotal / FREE_SHIP_THRESHOLD) * 100);
+      return (
+        <div className="rounded-2xl border border-ash bg-ash p-3">
+          <p className="flex items-center gap-2 font-medium">
+            <IconTruck size={18} />
+            {left > 0 ? <>Add <span className="font-medium text-rose">{money(left)}</span> more for free shipping</> : <>Free shipping unlocked.</>}
+          </p>
+          <div className="mt-2 h-3 overflow-hidden rounded-2xl border border-ash bg-coal">
+            <div className={`h-full transition-all duration-500 ${left > 0 ? 'bg-gold' : 'bg-ash'}`} style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      );
+    }
+
+    function CartDrawer({ open, onClose, cart, updateQty, removeItem, subtotal, onCheckout, checkingOut, checkoutError, notice }) {
+      const panelRef = useRef(null);
+      useEffect(() => { if (open && panelRef.current) panelRef.current.focus(); }, [open]);
+      return (
+        <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+          <div onClick={onClose} className={`absolute inset-0 bg-black/80 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`} />
+          <aside ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Shopping cart"
+            className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-ash bg-ink outline-none transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="flex items-center justify-between border-b border-ash bg-coal px-5 py-4">
+              <h2 className="flex items-center gap-2 font-display text-2xl font-medium"><IconCart /> Your Cart</h2>
+              <button type="button" onClick={onClose} aria-label="Close cart" className="grid h-11 w-11 place-items-center rounded-2xl border border-ash bg-ink hover:bg-ash">
+                <IconX />
+              </button>
+            </div>
+
+            <div className="border-b border-ash px-5 py-4"><FreeShipBar subtotal={subtotal} /></div>
+            {notice && <p className="border-b border-ash bg-coal px-5 py-3 text-sm text-rose" role="status">{notice}</p>}
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {cart.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <img src={PHOTOS.baked} alt="" className="h-28 w-28 rounded-full object-cover" />
+                  <p className="font-display text-xl font-medium">Your cart is empty.</p>
+                  <a href="#shop" onClick={onClose} className="btn-press text-xs rounded-2xl border border-ash bg-gold px-6 py-3 font-medium uppercase tracking-[0.2em] text-ink">Shop the Boxes</a>
+                </div>
+              ) : (
+                <ul className="space-y-4">
+                  {cart.map(item => {
+                    return (
+                      <li key={item.key} className="rounded-2xl border border-ash bg-coal p-3">
+                        <div className="flex gap-3">
+                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-ash bg-ink">
+                            <img src={thumb(item.form)} alt="" className="h-full w-full object-cover" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-display font-medium leading-tight">{item.title}</h3>
+                              <button type="button" onClick={() => removeItem(item.key)} aria-label={`Remove ${item.title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl text-smoke hover:bg-ink hover:text-rose">
+                                <IconTrash size={16} />
+                              </button>
+                            </div>
+                            <p className="mt-1.5 text-xs text-smoke">Gluten-Free · Vegan</p>
+                            <div className="mt-2 flex items-center justify-between">
+                              <QtyStepper compact value={item.qty} label={item.title} onDec={() => updateQty(item.key, -1)} onInc={() => updateQty(item.key, 1)} decDisabled={item.qty <= 1} />
+                              <span className="font-display text-lg font-medium">{money(item.unitPrice * item.qty)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="border-t border-ash bg-coal px-5 py-4">
+                <div className="flex justify-between font-display text-lg"><span>Subtotal</span><span className="font-medium">{money(subtotal)}</span></div>
+                <p className="mt-1 text-xs text-smoke">Shipping calculated at checkout. Dough ships with free cold packs.</p>
+                <button type="button" onClick={onCheckout} disabled={checkingOut}
+                  className="btn-press mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-ash bg-gold py-4 text-xs font-medium uppercase tracking-[0.2em] text-ink disabled:opacity-70">
+                  <IconLock size={18} /> {checkingOut ? 'Opening secure checkout…' : `Checkout · ${money(subtotal)}`}
+                </button>
+                {checkoutError && <p className="mt-3 text-sm text-rose" role="alert">{checkoutError}</p>}
+                <p className="mt-3 text-center text-[11px] text-smoke">Secure payment by Stripe. Cards, Apple Pay and Google Pay.</p>
+              </div>
+            )}
+          </aside>
+        </div>
+      );
+    }
+
+    function OrderConfirmation({ sessionId, onClose }) {
+      const [order, setOrder] = useState(null);
+      const [failed, setFailed] = useState(false);
+      useEffect(() => {
+        fetch(`/.netlify/functions/order-status?session_id=${encodeURIComponent(sessionId)}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(setOrder)
+          .catch(() => setFailed(true));
+      }, [sessionId]);
+      const cents = n => money((n || 0) / 100);
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Order confirmation">
+          <div className="absolute inset-0 bg-black/80" onClick={onClose} />
+          <div className="relative max-h-[92vh] w-full max-w-lg animate-pop-in overflow-y-auto rounded-t-[28px] bg-coal p-6 sm:rounded-[28px] sm:p-8">
+            <button type="button" onClick={onClose} aria-label="Close" className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-2xl border border-ash hover:bg-ash"><IconX /></button>
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-gold text-ink"><IconCheck size={32} strokeWidth={2.5} /></div>
+            <h2 className="mt-5 font-display text-2xl sm:text-3xl">Thank you!</h2>
+            {!order && !failed && <p className="mt-3 text-smoke">Loading your order…</p>}
+            {failed && <p className="mt-3 text-smoke">Your payment went through. A receipt is on its way to your email.</p>}
+            {order && (
+              <>
+                <p className="mt-3 text-smoke">
+                  Order <span className="text-bone">#{order.reference}</span>
+                  {order.email && <> · receipt sent to <span className="text-bone">{order.email}</span></>}
+                </p>
+                <ul className="mt-6 space-y-2 border-t border-ash pt-5 text-sm">
+                  {order.items.map((it, i) => (
+                    <li key={i} className="flex justify-between gap-4"><span>{it.qty}× {it.name}</span><span>{cents(it.amount)}</span></li>
+                  ))}
+                  <li className="flex justify-between gap-4 text-smoke"><span>Shipping</span><span>{order.shipping ? cents(order.shipping) : 'Free'}</span></li>
+                  <li className="flex justify-between gap-4 border-t border-ash pt-3 font-display text-lg"><span>Total</span><span>{cents(order.total)}</span></li>
+                </ul>
+              </>
+            )}
+            <button type="button" onClick={onClose} className="btn-press mt-8 w-full bg-gold py-4 text-sm uppercase text-ink">Keep browsing</button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* FAQ / Baking guide                                                  */
+    /* ------------------------------------------------------------------ */
+    const FAQ_GROUPS = [
+      {
+        title: 'How to bake our frozen dough', icon: <IconSnow size={22} />,
+        items: [
+          { q: 'What oven temp and how long?', a: (
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Preheat to <b>350°F (175°C)</b>. Convection: 325°F.</li>
+              <li>Bake <b>straight from frozen</b>, no thawing, for <b>13–15 minutes</b>.</li>
+              <li>Pull them when the edges are golden and the centers still look a little underdone. They set as they cool.</li>
+              <li>Space them 3 inches apart. Thawed dough? Take 2–3 minutes off.</li>
+            </ul>
+          ) },
+          { q: 'Cookie spatula tips for perfect rounds', a: (
+            <ul className="list-disc space-y-1 pl-5">
+              <li><b>The scoot:</b> right out of the oven, swirl a round cutter or glass rim around each cookie to tuck in the edges.</li>
+              <li><b>Rest first:</b> let cookies sit on the pan 5 minutes before you move them. GF cookies are tender when hot.</li>
+              <li><b>Thin spatula:</b> a thin metal spatula slides under cleanly without crumbling the bottoms.</li>
+              <li><b>Gooey upgrade:</b> press a few extra chocolate chips on top right after baking.</li>
+            </ul>
+          ) },
+          { q: 'How long does the dough keep?', a: 'Up to 3 months in the freezer in its sealed bag, or 5 days in the fridge. Freezer burn is the enemy, so press the air out after each use.' },
+        ],
+      },
+      {
+        title: 'Kitchen cross-contamination protocols', icon: <IconShield size={22} />,
+        items: [
+          { q: 'Is your kitchen really 100% gluten-free?', a: 'Yes. Our facility is dedicated gluten-free and certified by a third-party GF certification program. No wheat, barley, rye, or conventional oats ever come through our doors, and that includes staff lunches.' },
+          { q: 'How do you test?', a: 'Every production lot is tested for gluten and must come in under 20 ppm, the FDA gluten-free standard. Incoming ingredients need a supplier GF certificate before they reach our pantry.' },
+          { q: 'Is it really vegan?', a: 'Yes. The cookies and the dough contain no dairy, eggs, honey, or other animal products, and the chocolate chips are dairy-free.' },
+          { q: 'What about nuts and other allergens?', a: '[YOUR ALLERGEN STATEMENT: list any remaining allergens in the recipe, such as soy or coconut, and whether nuts are handled in the facility.]' },
+        ],
+      },
+    ];
+
+    function AccordionItem({ q, a, open, onToggle, id }) {
+      return (
+        <div className="overflow-hidden rounded-2xl bg-ink text-bone">
+          <h4>
+            <button type="button" onClick={onToggle} aria-expanded={open} aria-controls={id}
+              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-medium">
+              {q}
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold text-ink transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+                <IconChevron size={18} strokeWidth={2.5} />
+              </span>
+            </button>
+          </h4>
+          <div id={id} role="region" className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              <div className="px-5 pb-5 leading-relaxed text-smoke">{a}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FAQ() {
+      const [openKey, setOpenKey] = useState('0-0');
+      return (
+        <section id="faq" className="scroll-mt-20 bg-bone text-ink">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+            <div className="text-center">
+              <p className="text-xs uppercase tracking-[0.15em]">Baking guide &amp; FAQ</p>
+              <h2 className="mt-3 font-display text-3xl sm:text-5xl">Bake it right</h2>
+            </div>
+            <div className="mt-12 grid gap-10 lg:grid-cols-2">
+              {FAQ_GROUPS.map((g, gi) => (
+                <div key={g.title}>
+                  <h3 className="mb-4 text-sm uppercase">{g.title}</h3>
+                  <div className="space-y-3">
+                    {g.items.map((it, ii) => {
+                      const key = `${gi}-${ii}`;
+                      return <AccordionItem key={key} id={`faq-${key}`} q={it.q} a={it.a} open={openKey === key} onToggle={() => setOpenKey(openKey === key ? null : key)} />;
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="bg-ink">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-6">
+            <Logo />
+            <p className="text-[11px] uppercase tracking-[0.1em] text-smoke">© {new Date().getFullYear()} Riot Cookie Company · Photos: Unsplash.</p>
+          </div>
+        </footer>
+      );
+    }
+
+    function Toast({ message }) {
+      if (!message) return null;
+      return (
+        <div key={message.id} role="status" className="fixed bottom-6 left-1/2 z-[60] flex animate-toast items-center gap-2 rounded-2xl bg-gold px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-ink">
+          <IconCheck size={18} /> {message.text}
+        </div>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* App                                                                 */
+    /* ------------------------------------------------------------------ */
+    function App() {
+      const [cart, setCart] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('riot-cart')) || []; } catch { return []; }
+      });
+      const [drawerOpen, setDrawerOpen] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [checkingOut, setCheckingOut] = useState(false);
+      const [checkoutError, setCheckoutError] = useState('');
+      const [notice, setNotice] = useState('');
+      const [confirmedSession, setConfirmedSession] = useState(null);
+
+      // Keep the cart across the round trip to Stripe
+      useEffect(() => {
+        try { localStorage.setItem('riot-cart', JSON.stringify(cart)); } catch {}
+      }, [cart]);
+
+      // Handle the return from Stripe Checkout
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('checkout');
+        if (!status) return;
+        if (status === 'success' && params.get('session_id')) {
+          setCart([]);
+          setConfirmedSession(params.get('session_id'));
+        } else if (status === 'cancelled') {
+          setNotice('Checkout cancelled. Your cart is saved.');
+          setDrawerOpen(true);
+        }
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+      }, []);
+
+      // If the shopper comes back with the browser's Back button, re-enable the checkout button
+      useEffect(() => {
+        const onShow = e => { if (e.persisted) setCheckingOut(false); };
+        window.addEventListener('pageshow', onShow);
+        return () => window.removeEventListener('pageshow', onShow);
+      }, []);
+
+      const startCheckout = async () => {
+        setCheckingOut(true);
+        setCheckoutError('');
+        try {
+          const res = await fetch('/.netlify/functions/create-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: cart.map(i => ({ id: i.key, qty: i.qty })) }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout. Please try again.');
+          window.location.href = data.url;
+        } catch (err) {
+          setCheckoutError(err.message);
+          setCheckingOut(false);
+        }
+      };
+
+      const cartCount = cart.reduce((a, i) => a + i.qty, 0);
+      const subtotal = cart.reduce((a, i) => a + i.unitPrice * i.qty, 0);
+
+      const addToCart = useCallback((product, qty = 1) => {
+        setCart(prev => {
+          const existing = prev.find(i => i.key === product.id);
+          if (existing) return prev.map(i => i.key === product.id ? { ...i, qty: i.qty + qty } : i);
+          return [...prev, { key: product.id, title: product.name, form: product.form, size: product.size, unitPrice: product.price, qty }];
+        });
+        setToast({ id: Date.now(), text: `${qty > 1 ? qty + ' × ' : ''}${product.name} added` });
+      }, []);
+
+      const updateQty = (key, d) => setCart(prev => prev.map(i => i.key === key ? { ...i, qty: Math.max(1, i.qty + d) } : i));
+      const removeItem = key => setCart(prev => prev.filter(i => i.key !== key));
+
+      useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(null), 2200);
+        return () => clearTimeout(t);
+      }, [toast]);
+
+      // Lock page scroll when an overlay is open; Escape closes the top-most overlay
+      useEffect(() => {
+        document.body.style.overflow = drawerOpen || confirmedSession ? 'hidden' : '';
+        const onKey = e => {
+          if (e.key !== 'Escape') return;
+          if (confirmedSession) setConfirmedSession(null);
+          else if (drawerOpen) setDrawerOpen(false);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [drawerOpen, confirmedSession]);
+
+      return (
+        <>
+          <Nav cartCount={cartCount} onCart={() => setDrawerOpen(true)} />
+          <main>
+            <Hero />
+            <Shop onAdd={addToCart} />
+            <Benefits />
+            <FAQ />
+          </main>
+          <Footer />
+
+          <CartDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); setNotice(''); }} cart={cart} updateQty={updateQty} removeItem={removeItem}
+            subtotal={subtotal} onCheckout={startCheckout} checkingOut={checkingOut} checkoutError={checkoutError} notice={notice} />
+          {confirmedSession && <OrderConfirmation sessionId={confirmedSession} onClose={() => setConfirmedSession(null)} />}
+          <Toast message={toast} />
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
