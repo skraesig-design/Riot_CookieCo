@@ -31,5 +31,6 @@ export default async (req) => {
       amount: li.amount_total,
     })),
     reference: s.id.slice(-8).toUpperCase(),
+    subscription: s.mode === 'subscription',
   });
 };
