@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Riot Cookie Company — Gluten-Free Vegan Chocolate Chip Cookies</title>
-  <meta name="description" content="Gluten-free, vegan chocolate chip cookies, freshly baked or as frozen dough. Boxes of 12 or 24." />
+  <title>Riot Cookie Company — Gluten-Free, Egg-Free Chocolate Chip Cookies</title>
+  <meta name="description" content="Gluten-free, egg-free chocolate chip cookies, freshly baked or as frozen dough. Boxes of 10, 20 or 30." />
   <meta name="theme-color" content="#0E0E0E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -87,8 +87,9 @@
     
     // Display prices only. The real prices are set on the server in netlify/functions/create-checkout.mjs
     const PRICES = {
-      baked: { 12: 42, 24: 76 },
-      dough: { 12: 38, 24: 68 },
+      // TEMPORARY prices: replace with final prices (and update the server copy too)
+      baked: { 10: 35, 20: 64, 30: 90 },
+      dough: { 10: 32, 20: 57, 30: 81 },
     };
 
     const FORMS = {
@@ -107,17 +108,16 @@
     const thumb = form => form === 'dough' ? u('1506184341422-6cc152ae474b', 160) : u('1558961363-fa8fdf82db35', 160);
 
 
-    // The four offerings
-    const PRODUCTS = [
-      { id: 'baked-12', form: 'baked', size: 12, name: '12-Piece Chocolate Chip Cookies' },
-      { id: 'baked-24', form: 'baked', size: 24, name: '24-Piece Chocolate Chip Cookies' },
-      { id: 'dough-12', form: 'dough', size: 12, name: '12-Piece Chocolate Chip Cookie Dough' },
-      { id: 'dough-24', form: 'dough', size: 24, name: '24-Piece Chocolate Chip Cookie Dough' },
-    ].map(p => ({ ...p, price: PRICES[p.form][p.size] }));
+    // The six offerings
+    const SIZES = [10, 20, 30];
+    const PRODUCTS = ['baked', 'dough'].flatMap(form => SIZES.map(size => ({
+      id: `${form}-${size}`, form, size,
+      name: `${size}-Piece Chocolate Chip ${form === 'dough' ? 'Cookie Dough' : 'Cookies'}`,
+    }))).map(p => ({ ...p, price: PRICES[p.form][p.size] }));
 
     // Paste your Stripe customer portal link here (Stripe → Settings → Billing → Customer portal)
     // so subscribers can update their card or cancel. Leave empty to hide the link.
-    const MANAGE_SUBSCRIPTION_URL = '';
+    const MANAGE_SUBSCRIPTION_URL = 'https://billing.stripe.com/p/login/8x2eVddLfb6x4qr0zP5EY00';
 
     const money = n => `$${n.toFixed(2)}`;
 
@@ -255,7 +255,7 @@
               The chocolate chip cookie, made for everyone
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-smoke">
-              Gluten-free and vegan, from a dedicated gluten-free kitchen. Freshly baked or as frozen dough, in boxes of 12 or 24. Subscribe monthly and shipping is always free.
+              Gluten-free and egg-free, from a dedicated gluten-free kitchen. Freshly baked or as frozen dough, in boxes of 10, 20 or 30. Subscribe monthly and shipping is always free.
             </p>
             <a href="#shop" className="btn-press mt-9 inline-flex items-center gap-2 bg-gold px-8 py-4 text-sm uppercase text-ink">
               Shop Cookies <IconArrow size={16} strokeWidth={2.5} />
@@ -264,14 +264,14 @@
           <div className="relative mx-auto mt-12 max-w-5xl px-4 sm:px-6">
             <img src={PHOTOS.hero} alt="A tall stack of chocolate chip cookies" className="h-[320px] w-full rounded-[32px] object-cover sm:h-[460px]" />
             <StatCircle big="GF" small="certified" className="absolute -top-8 left-8 h-24 w-24 bg-gold shadow-xl sm:left-14 sm:h-32 sm:w-32" />
-            <StatCircle big="VG" small="plant-based" className="sunset absolute -bottom-8 right-8 h-24 w-24 shadow-xl sm:right-14 sm:h-32 sm:w-32" />
+            <StatCircle big="EF" small="egg-free" className="sunset absolute -bottom-8 right-8 h-24 w-24 shadow-xl sm:right-14 sm:h-32 sm:w-32" />
           </div>
         </section>
       );
     }
 
     function ProductPanel({ form, onAdd }) {
-      const [size, setSize] = useState(12);
+      const [size, setSize] = useState(10);
       const [qty, setQty] = useState(1);
       const [plan, setPlan] = useState('once');
       const [added, setAdded] = useState(false);
@@ -291,7 +291,7 @@
             <StatCircle big={size} small={dough ? 'dough balls' : 'cookies'} className={`absolute left-4 top-4 h-24 w-24 shadow-xl ${dough ? 'sunset' : 'bg-gold'}`} />
           </div>
           <h3 className="mt-8 font-display text-2xl uppercase sm:text-3xl">{dough ? 'Cookie Dough' : 'Fresh Baked'}</h3>
-          <p className="mt-2 text-xs uppercase tracking-[0.12em] text-rose">Chocolate chip · Gluten-free · Vegan</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.12em] text-rose">Chocolate chip · Gluten-free · Egg-free</p>
           <p className="mt-4 text-smoke">
             {dough
               ? 'Frozen, pre-portioned dough balls. Ships with cold packs. Bake from frozen at 350°F for 13–15 minutes.'
@@ -315,8 +315,9 @@
           </fieldset>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <Segmented label={`${dough ? 'Dough' : 'Baked'} box size`} value={size} onChange={setSize} options={[
-              { value: 12, label: '12 Piece' },
-              { value: 24, label: '24 Piece' },
+              { value: 10, label: '10 Piece' },
+              { value: 20, label: '20 Piece' },
+              { value: 30, label: '30 Piece' },
             ]} />
             <div className="text-right">
               <div className="font-display text-3xl">{money(product.price)}{monthly && <span className="text-base text-smoke"> /mo</span>}</div>
@@ -350,7 +351,7 @@
               <h3 className="text-sm uppercase text-rose">How subscribing works</h3>
               <ol className="mt-5 grid gap-6 sm:grid-cols-3">
                 {[
-                  ['1', 'Pick your box', 'Baked or dough, 12 or 24. Choose “Subscribe monthly” on the card.'],
+                  ['1', 'Pick your box', 'Baked or dough, 10, 20 or 30. Choose “Subscribe monthly” on the card.'],
                   ['2', 'We ship every month', 'You’re billed and a fresh box ships monthly. Shipping is always free.'],
                   ['3', 'Change or cancel anytime', 'No commitment. Update your card or cancel whenever you like.'],
                 ].map(([n, t, d]) => (
@@ -374,7 +375,7 @@
     function Benefits() {
       const items = [
         { icon: <IconShield size={28} strokeWidth={2} />, t: 'Certified gluten-free', d: 'Made in a dedicated gluten-free kitchen. Safe for celiacs.' },
-        { icon: <IconLeaf size={28} strokeWidth={2} />, t: '100% plant-based', d: 'No dairy, no eggs. Just a really good chocolate chip cookie.' },
+        { icon: <IconLeaf size={28} strokeWidth={2} />, t: 'Egg-free', d: 'No eggs, ever. Still rich, chewy and gooey.' },
         { icon: <IconFlame size={28} strokeWidth={2} />, t: 'Baked or ready-to-bake', d: 'Ready to eat today, or frozen dough for whenever the craving hits.' },
       ];
       return (
@@ -455,7 +456,7 @@
                             </div>
                             {item.plan === 'monthly'
                               ? <p className="mt-1.5 text-xs text-rose">Monthly subscription · ships free</p>
-                              : <p className="mt-1.5 text-xs text-smoke">One-time · Gluten-Free · Vegan</p>}
+                              : <p className="mt-1.5 text-xs text-smoke">One-time · Gluten-Free · Egg-Free</p>}
                             <div className="mt-2 flex items-center justify-between">
                               <QtyStepper compact value={item.qty} label={item.title} onDec={() => updateQty(item.key, -1)} onInc={() => updateQty(item.key, 1)} decDisabled={item.qty <= 1} />
                               <span className="font-display text-lg font-medium">{money(item.unitPrice * item.qty)}{item.plan === 'monthly' && <span className="text-xs text-smoke"> /mo</span>}</span>
@@ -574,7 +575,7 @@
         items: [
           { q: 'Is your kitchen really 100% gluten-free?', a: 'Yes. Our facility is dedicated gluten-free and certified by a third-party GF certification program. No wheat, barley, rye, or conventional oats ever come through our doors, and that includes staff lunches.' },
           { q: 'How do you test?', a: 'Every production lot is tested for gluten and must come in under 20 ppm, the FDA gluten-free standard. Incoming ingredients need a supplier GF certificate before they reach our pantry.' },
-          { q: 'Is it really vegan?', a: 'Yes. The cookies and the dough contain no dairy, eggs, honey, or other animal products, and the chocolate chips are dairy-free.' },
+          { q: 'Are they really egg-free?', a: 'Yes. Neither the cookies nor the dough contain any eggs. They do contain dairy, so they are not vegan.' },
           { q: 'What about nuts and other allergens?', a: '[YOUR ALLERGEN STATEMENT: list any remaining allergens in the recipe, such as soy or coconut, and whether nuts are handled in the facility.]' },
         ],
       },
@@ -654,7 +655,10 @@
     /* ------------------------------------------------------------------ */
     function App() {
       const [cart, setCart] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('riot-cart')) || []; } catch { return []; }
+        try {
+          const saved = JSON.parse(localStorage.getItem('riot-cart')) || [];
+          return saved.filter(i => PRODUCTS.some(p => p.id === (i.id || String(i.key).split('|')[0])));
+        } catch { return []; }
       });
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [toast, setToast] = useState(null);

@@ -1,5 +1,5 @@
 // POST /.netlify/functions/create-checkout
-// Body: { items: [{ id: "baked-12", qty: 2, plan: "once" | "monthly" }, ...] }
+// Body: { items: [{ id: "baked-10", qty: 2, plan: "once" | "monthly" }, ...] }
 // Creates a Stripe Checkout Session and returns { url } to redirect the shopper to.
 //
 // One-time carts: payment mode, $9.95 shipping under $75, free above.
@@ -11,11 +11,14 @@
 // Keep them in sync with PRICES in index.html (that copy is only for display).
 // Requires the environment variable STRIPE_SECRET_KEY (sk_test_... or sk_live_...).
 
+// TEMPORARY prices (in cents): replace with final prices.
 const PRODUCTS = {
-  'baked-12': { name: '12-Piece Chocolate Chip Cookies (GF/VG)',      cents: 4200 },
-  'baked-24': { name: '24-Piece Chocolate Chip Cookies (GF/VG)',      cents: 7600 },
-  'dough-12': { name: '12-Piece Chocolate Chip Cookie Dough (GF/VG)', cents: 3800 },
-  'dough-24': { name: '24-Piece Chocolate Chip Cookie Dough (GF/VG)', cents: 6800 },
+  'baked-10': { name: '10-Piece Chocolate Chip Cookies (GF/Egg-Free)',      cents: 3500 },
+  'baked-20': { name: '20-Piece Chocolate Chip Cookies (GF/Egg-Free)',      cents: 6400 },
+  'baked-30': { name: '30-Piece Chocolate Chip Cookies (GF/Egg-Free)',      cents: 9000 },
+  'dough-10': { name: '10-Piece Chocolate Chip Cookie Dough (GF/Egg-Free)', cents: 3200 },
+  'dough-20': { name: '20-Piece Chocolate Chip Cookie Dough (GF/Egg-Free)', cents: 5700 },
+  'dough-30': { name: '30-Piece Chocolate Chip Cookie Dough (GF/Egg-Free)', cents: 8100 },
 };
 const FREE_SHIP_THRESHOLD_CENTS = 7500;
 const SHIPPING_CENTS = 995;
